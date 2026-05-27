@@ -1,0 +1,596 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#00e5a0">
+<link rel="manifest" href="manifest.json">
+<title>BoxPack AI · 智能装箱系统</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@300;400;500&display=swap');
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0a0d14;--surf:#12161f;--surf2:#181c27;--bd:#252a38;
+  --acc:#00e5a0;--acc2:#3b82f6;--warn:#f59e0b;--danger:#ef4444;
+  --text:#dde1ea;--muted:#5a6172;
+  --mono:'IBM Plex Mono',monospace;--sans:'IBM Plex Sans',sans-serif;
+}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:13px;min-height:100vh}
+
+/* NAV */
+.nav{background:var(--surf);border-bottom:1px solid var(--bd);padding:0 20px;display:flex;align-items:center;gap:0}
+.nav-logo{font-family:var(--mono);font-size:12px;font-weight:600;color:var(--acc);letter-spacing:.15em;padding:14px 20px 14px 0;border-right:1px solid var(--bd);margin-right:4px}
+.nav-tab{padding:14px 16px;font-size:12px;font-family:var(--mono);cursor:pointer;border-bottom:2px solid transparent;color:var(--muted);transition:color .15s,border-color .15s;white-space:nowrap}
+.nav-tab.active{color:var(--acc);border-bottom-color:var(--acc)}
+.nav-tab:hover{color:var(--text)}
+.nav-right{margin-left:auto;display:flex;align-items:center;gap:8px}
+.install-btn{padding:6px 14px;background:var(--acc);color:#000;border:none;border-radius:6px;font-family:var(--mono);font-size:10px;font-weight:600;cursor:pointer;display:none}
+.ver{font-size:10px;color:var(--muted);font-family:var(--mono)}
+
+/* PAGES */
+.page{display:none;padding:20px}
+.page.active{display:block}
+
+/* ---- PACK PAGE ---- */
+.pack-layout{display:grid;grid-template-columns:300px 1fr;gap:0;min-height:calc(100vh - 45px)}
+.pack-left{background:var(--surf);border-right:1px solid var(--bd);padding:18px;display:flex;flex-direction:column;gap:14px;overflow-y:auto}
+.pack-right{padding:20px;overflow-y:auto;display:flex;flex-direction:column;gap:16px}
+
+.sec-title{font-size:9px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:7px;font-family:var(--mono)}
+
+.box-select select{width:100%;background:var(--bg);border:1px solid var(--bd);border-radius:8px;padding:9px 12px;color:var(--text);font-family:var(--mono);font-size:11px;outline:none;cursor:pointer}
+.box-select select:focus{border-color:var(--acc)}
+
+.box-info-card{background:var(--bg);border:1px solid var(--bd);border-radius:8px;padding:10px 12px}
+.box-info-card table{width:100%;font-size:11px;font-family:var(--mono)}
+.box-info-card td{padding:2px 0;color:var(--muted)}
+.box-info-card td:last-child{color:var(--acc);text-align:right}
+
+textarea{width:100%;background:var(--bg);border:1px solid var(--bd);border-radius:8px;padding:10px 12px;color:var(--text);font-family:var(--mono);font-size:11px;line-height:1.9;resize:vertical;min-height:180px;outline:none;transition:border-color .2s}
+textarea:focus{border-color:var(--acc)}
+
+.hint{font-size:10px;color:var(--muted);background:var(--bg);border:1px solid var(--bd);border-radius:6px;padding:8px 10px;line-height:1.7}
+.hint code{color:var(--acc2);font-family:var(--mono)}
+
+.run-btn{width:100%;padding:11px;background:var(--acc);color:#000;border:none;border-radius:8px;font-family:var(--mono);font-size:11px;font-weight:600;letter-spacing:.06em;cursor:pointer;transition:opacity .15s,transform .1s}
+.run-btn:hover{opacity:.85}
+.run-btn:active{transform:scale(.98)}
+
+.algo-note{font-size:10px;color:var(--muted);font-family:var(--mono);line-height:1.8;text-align:center}
+
+/* STATS */
+.stats-row{display:flex;gap:10px;flex-wrap:wrap}
+.stat{background:var(--surf);border:1px solid var(--bd);border-radius:8px;padding:10px 16px;min-width:100px}
+.stat-lbl{font-size:9px;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;font-family:var(--mono);margin-bottom:4px}
+.stat-v{font-size:20px;font-weight:600;font-family:var(--mono)}
+.c-acc{color:var(--acc)}.c-acc2{color:var(--acc2)}.c-warn{color:var(--warn)}
+
+/* FLAGS */
+.flags-card{background:var(--surf);border:1px solid #3a2a08;border-radius:10px;padding:12px 16px}
+.flags-title{font-family:var(--mono);font-size:11px;color:var(--warn);margin-bottom:8px;font-weight:600}
+.flag-item{font-size:11px;color:#fcd34d;padding:3px 0;border-bottom:1px solid var(--bd)}
+.flag-item:last-child{border:none}
+
+/* BOX TABS */
+.box-tabs-wrap{border-bottom:1px solid var(--bd);display:flex;overflow-x:auto;gap:0}
+.box-tab-btn{padding:9px 16px;font-family:var(--mono);font-size:11px;cursor:pointer;border-bottom:2px solid transparent;color:var(--muted);white-space:nowrap;transition:color .15s,border-color .15s;background:none;border-top:none;border-left:none;border-right:none}
+.box-tab-btn.active{color:var(--acc);border-bottom-color:var(--acc)}
+.box-tab-btn:hover{color:var(--text)}
+
+/* BOX VIEW */
+.box-view{display:none}
+.box-view.active{display:grid;grid-template-columns:1fr 320px;gap:16px;padding-top:16px}
+
+.canvas-card{background:var(--surf);border:1px solid var(--bd);border-radius:12px;overflow:hidden}
+.canvas-hdr{padding:11px 16px;border-bottom:1px solid var(--bd);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px}
+.canvas-hdr h2{font-family:var(--mono);font-size:12px;font-weight:600}
+.util-row{display:flex;align-items:center;gap:8px}
+.util-bar{width:90px;height:5px;background:var(--bd);border-radius:3px;overflow:hidden}
+.util-fill{height:100%;border-radius:3px}
+.util-pct{font-size:11px;font-family:var(--mono);color:var(--acc)}
+canvas.c3d{display:block;width:100%;cursor:grab;background:#06080f}
+canvas.c3d:active{cursor:grabbing}
+.canvas-foot{padding:8px 16px;border-top:1px solid var(--bd);display:flex;justify-content:space-between;font-size:10px;font-family:var(--mono);color:var(--muted)}
+.canvas-foot span:last-child{color:var(--acc)}
+.print-row{padding:10px 16px;border-top:1px solid var(--bd);display:flex;gap:8px}
+.print-btn{flex:1;padding:8px;background:transparent;border:1px solid var(--bd);border-radius:6px;color:var(--text);font-family:var(--mono);font-size:10px;cursor:pointer;transition:background .15s}
+.print-btn:hover{background:var(--surf2)}
+.print-btn.primary{background:var(--acc2);color:#fff;border-color:var(--acc2)}
+.print-btn.primary:hover{opacity:.85}
+
+.side-cards{display:flex;flex-direction:column;gap:12px;overflow-y:auto;max-height:calc(100vh - 200px)}
+.card{background:var(--surf);border:1px solid var(--bd);border-radius:12px;padding:14px}
+.card h3{font-family:var(--mono);font-size:9px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:10px}
+
+.legend-item{display:flex;align-items:flex-start;gap:9px;padding:7px 0;border-bottom:1px solid var(--bd)}
+.legend-item:last-child{border:none}
+.legend-dot{width:12px;height:12px;border-radius:3px;flex-shrink:0;margin-top:2px}
+.legend-sku{font-family:var(--mono);font-size:11px;font-weight:600}
+.legend-name{font-size:10px;color:var(--muted)}
+.legend-dim{font-size:10px;color:var(--acc2);font-family:var(--mono)}
+.legend-pos{font-size:10px;color:var(--acc);font-family:var(--mono)}
+
+.step-row{display:flex;gap:9px;padding:7px 0;border-bottom:1px solid var(--bd);align-items:flex-start}
+.step-row:last-child{border:none}
+.step-num{width:18px;height:18px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;font-family:var(--mono);font-weight:600;flex-shrink:0;color:#000;margin-top:1px}
+.step-info{font-size:11px;line-height:1.6}
+.step-sku{font-family:var(--mono);font-weight:600}
+.step-coord{font-size:10px;color:var(--acc2);font-family:var(--mono)}
+
+/* EMPTY */
+.empty-state{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 20px;color:var(--muted);gap:12px;text-align:center}
+.empty-icon{font-size:44px;opacity:.2}
+.empty-txt{font-family:var(--mono);font-size:12px;line-height:2}
+
+/* ---- SKU PAGE ---- */
+.sku-toolbar{display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;align-items:center}
+.sku-search{flex:1;min-width:200px;background:var(--surf);border:1px solid var(--bd);border-radius:8px;padding:9px 12px;color:var(--text);font-family:var(--mono);font-size:12px;outline:none}
+.sku-search:focus{border-color:var(--acc)}
+.sku-table-wrap{background:var(--surf);border:1px solid var(--bd);border-radius:12px;overflow:hidden}
+table.sku-table{width:100%;border-collapse:collapse;font-size:12px}
+table.sku-table th{background:var(--surf2);padding:10px 14px;text-align:left;font-family:var(--mono);font-size:10px;font-weight:600;letter-spacing:.08em;color:var(--muted);border-bottom:1px solid var(--bd)}
+table.sku-table td{padding:10px 14px;border-bottom:1px solid var(--bd);vertical-align:middle}
+table.sku-table tr:last-child td{border:none}
+table.sku-table tr:hover td{background:var(--surf2)}
+.sku-badge{display:inline-block;font-size:10px;padding:2px 8px;border-radius:4px;font-family:var(--mono);font-weight:600}
+.badge-ok{background:#0a2d1e;color:var(--acc)}
+.badge-warn{background:#3a2a08;color:var(--warn)}
+
+/* ---- HISTORY PAGE ---- */
+.hist-toolbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
+.clear-btn{padding:7px 14px;background:transparent;border:1px solid var(--danger);border-radius:6px;color:var(--danger);font-family:var(--mono);font-size:11px;cursor:pointer}
+.clear-btn:hover{background:#2d1a1a}
+.hist-table{width:100%;border-collapse:collapse;font-size:12px}
+.hist-table th{background:var(--surf2);padding:10px 14px;text-align:left;font-family:var(--mono);font-size:10px;font-weight:600;color:var(--muted);border-bottom:1px solid var(--bd)}
+.hist-table td{padding:10px 14px;border-bottom:1px solid var(--bd)}
+.hist-table tr:hover td{background:var(--surf2)}
+
+/* ---- SETTINGS PAGE ---- */
+.settings-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:16px}
+.settings-card{background:var(--surf);border:1px solid var(--bd);border-radius:12px;padding:18px}
+.settings-card h3{font-family:var(--mono);font-size:12px;font-weight:600;margin-bottom:14px;color:var(--acc)}
+.settings-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--bd);font-size:12px}
+.settings-row:last-child{border:none}
+.settings-row label{color:var(--muted)}
+.settings-row span{font-family:var(--mono);color:var(--text)}
+
+/* RESPONSIVE */
+@media(max-width:800px){
+  .pack-layout{grid-template-columns:1fr}
+  .pack-left{border-right:none;border-bottom:1px solid var(--bd)}
+  .box-view.active{grid-template-columns:1fr}
+  .side-cards{max-height:none}
+}
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="nav-logo">📦 BOXPACK AI</div>
+  <button class="nav-tab active" onclick="showPage('pack',this)">装箱计算</button>
+  <button class="nav-tab" onclick="showPage('sku',this)">SKU管理</button>
+  <button class="nav-tab" onclick="showPage('history',this)">历史记录</button>
+  <button class="nav-tab" onclick="showPage('settings',this)">设置</button>
+  <div class="nav-right">
+    <span class="ver">v1.0.0</span>
+    <button class="install-btn" id="installBtn">安装到桌面</button>
+  </div>
+</nav>
+
+<!-- ==================== PACK PAGE ==================== -->
+<div class="page active" id="page-pack">
+<div class="pack-layout">
+  <div class="pack-left">
+    <div>
+      <div class="sec-title">选择箱型</div>
+      <div class="box-select"><select id="boxSelect" onchange="updateBoxInfo()"></select></div>
+    </div>
+    <div id="boxInfoCard" class="box-info-card"></div>
+    <div>
+      <div class="sec-title">输入订单 <span style="color:var(--acc);font-size:9px">— 每行: SKU 数量</span></div>
+      <textarea id="orderInput" placeholder="例:&#10;PB-05-BL 3&#10;CT-05-WH 2&#10;OB-01-01 5"></textarea>
+      <div class="hint" style="margin-top:6px">
+        格式: <code>SKU编号 数量</code> 每行一个<br>
+        超长SKU自动标记，跳过装箱
+      </div>
+    </div>
+    <button class="run-btn" onclick="runPack()">▶ 开始装箱计算</button>
+    <div class="algo-note">FFD算法 · 6方向旋转 · 重量优先</div>
+  </div>
+
+  <div class="pack-right" id="packRight">
+    <div class="empty-state" id="emptyState">
+      <div class="empty-icon">📦</div>
+      <div class="empty-txt">在左侧选择箱型<br>输入订单 SKU 和数量<br>点击「开始装箱计算」</div>
+    </div>
+    <div id="packResults" style="display:none"></div>
+  </div>
+</div>
+</div>
+
+<!-- ==================== SKU PAGE ==================== -->
+<div class="page" id="page-sku">
+  <div class="sku-toolbar">
+    <input class="sku-search" id="skuSearch" placeholder="搜索 SKU 或品名..." oninput="renderSkuTable()">
+    <span style="font-size:11px;color:var(--muted);font-family:var(--mono)" id="skuCount"></span>
+  </div>
+  <div class="sku-table-wrap">
+    <table class="sku-table">
+      <thead><tr>
+        <th>SKU</th><th>品名</th><th>长(cm)</th><th>宽(cm)</th><th>高(cm)</th><th>重量(kg)</th><th>体积(L)</th><th>状态</th>
+      </tr></thead>
+      <tbody id="skuTableBody"></tbody>
+    </table>
+  </div>
+  <div style="margin-top:12px;font-size:11px;color:var(--muted);font-family:var(--mono)">
+    ⓘ 如需修改SKU数据，用记事本打开 <code style="color:var(--acc2)">skudb.js</code> 文件编辑后刷新页面
+  </div>
+</div>
+
+<!-- ==================== HISTORY PAGE ==================== -->
+<div class="page" id="page-history">
+  <div class="hist-toolbar">
+    <div style="font-family:var(--mono);font-size:12px;color:var(--muted)">最近 100 条装箱记录（本机存储）</div>
+    <button class="clear-btn" onclick="if(confirm('确定清空所有历史记录？')){clearHistory();renderHistoryPage()}">清空记录</button>
+  </div>
+  <div class="sku-table-wrap" id="histContent"></div>
+</div>
+
+<!-- ==================== SETTINGS PAGE ==================== -->
+<div class="page" id="page-settings">
+  <div class="settings-grid">
+    <div class="settings-card">
+      <h3>📦 当前箱型配置</h3>
+      <div id="settingsBoxList"></div>
+      <div style="margin-top:12px;font-size:11px;color:var(--muted)">修改箱型请编辑 <code style="color:var(--acc2)">boxdb.js</code></div>
+    </div>
+    <div class="settings-card">
+      <h3>🗄 系统信息</h3>
+      <div class="settings-row"><label>版本</label><span>v1.0.0</span></div>
+      <div class="settings-row"><label>SKU数量</label><span id="settingsSkuCount">-</span></div>
+      <div class="settings-row"><label>算法</label><span>FFD + 6-rotation</span></div>
+      <div class="settings-row"><label>离线支持</label><span style="color:var(--acc)">✓ 已启用</span></div>
+      <div class="settings-row"><label>历史记录</label><span id="settingsHistCount">-</span></div>
+    </div>
+    <div class="settings-card">
+      <h3>🔧 维护说明</h3>
+      <div style="font-size:12px;color:var(--muted);line-height:2">
+        <div>• <code style="color:var(--acc2)">skudb.js</code> — SKU数据，记事本可编辑</div>
+        <div>• <code style="color:var(--acc2)">boxdb.js</code> — 箱型数据，记事本可编辑</div>
+        <div>• <code style="color:var(--acc2)">packing.js</code> — 装箱算法核心</div>
+        <div>• <code style="color:var(--acc2)">history.js</code> — 历史记录模块</div>
+        <div>• <code style="color:var(--acc2)">print.js</code> — 打印箱唛模块</div>
+        <div>• <code style="color:var(--acc2)">sw.js</code> — 离线缓存（更新时改版本号）</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="skudb.js"></script>
+<script src="boxdb.js"></script>
+<script src="packing.js"></script>
+<script src="history.js"></script>
+<script src="print.js"></script>
+<script>
+// ============================================================
+// 主应用逻辑
+// ============================================================
+const COLS=['#3b82f6','#00e5a0','#f59e0b','#a78bfa','#f87171','#34d399','#fb923c','#60a5fa','#4ade80','#e879f9','#fbbf24','#6ee7b7','#c084fc','#f472b6','#38bdf8','#818cf8'];
+
+let currentBoxes = [];
+let currentSelectedBox = null;
+
+// ---- PAGE NAV ----
+function showPage(id, tab) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('page-'+id).classList.add('active');
+  if(tab) tab.classList.add('active');
+  if(id==='sku') renderSkuTable();
+  if(id==='history') renderHistoryPage();
+  if(id==='settings') renderSettings();
+}
+
+// ---- BOX SELECT ----
+function initBoxSelect() {
+  const sel = document.getElementById('boxSelect');
+  sel.innerHTML = BOX_DB.map(b => `<option value="${b.id}">${b.name} (${b.l}×${b.w}×${b.h}cm)</option>`).join('');
+  updateBoxInfo();
+}
+function updateBoxInfo() {
+  const sel = document.getElementById('boxSelect');
+  const box = BOX_DB.find(b => b.id === sel.value) || BOX_DB[0];
+  currentSelectedBox = box;
+  document.getElementById('boxInfoCard').innerHTML = `
+    <table>
+      <tr><td>长</td><td>${box.l} cm</td></tr>
+      <tr><td>宽</td><td>${box.w} cm</td></tr>
+      <tr><td>高</td><td>${box.h} cm</td></tr>
+      <tr><td>最大承重</td><td>${box.maxWt} kg</td></tr>
+      <tr><td>内容积</td><td>${(box.l*box.w*box.h/1000).toFixed(0)} L</td></tr>
+    </table>`;
+}
+
+// ---- PARSE INPUT ----
+function parseOrder(txt) {
+  const items=[], flags=[], errs=[];
+  for (const line of txt.trim().split('\n')) {
+    const p = line.trim().split(/\s+/);
+    if (p.length < 2) continue;
+    const sku = p[0].toUpperCase(), qty = parseInt(p[1]);
+    if (!SKU_DB[sku]) { errs.push('未知SKU: '+sku); continue; }
+    if (isNaN(qty) || qty < 1) continue;
+    const d = SKU_DB[sku];
+    if (d.oversized) flags.push({sku, qty, name:d.name, l:d.l, w:d.w, h:d.h, wt:d.wt});
+    else items.push({sku, qty, l:d.l, w:d.w, h:d.h, wt:d.wt, name:d.name});
+  }
+  return {items, flags, errs};
+}
+
+// ---- RUN PACKING ----
+function runPack() {
+  const txt = document.getElementById('orderInput').value.trim();
+  if (!txt) return alert('请输入订单内容');
+  const {items, flags, errs} = parseOrder(txt);
+  if (errs.length) { alert(errs.join('\n')); return; }
+
+  const box = currentSelectedBox || BOX_DB[0];
+  const boxes = runPacking(items, box);
+  currentBoxes = boxes;
+
+  const boxVol = box.l * box.w * box.h;
+  const avgUtil = boxes.length ? Math.round(boxes.reduce((s,b)=>s+b.usedVol/boxVol*100,0)/boxes.length) : 0;
+  const result = { boxes, flagged:flags, avgUtil };
+
+  // save history
+  saveHistory(txt, result, box.name);
+
+  renderPackResults(boxes, flags, box, avgUtil);
+}
+
+function renderPackResults(boxes, flags, box, avgUtil) {
+  document.getElementById('emptyState').style.display = 'none';
+  const res = document.getElementById('packResults');
+  res.style.display = 'block';
+  res.innerHTML = '';
+
+  const totItems = boxes.reduce((s,b)=>s+b.placed.length,0);
+  const totWt = boxes.reduce((s,b)=>s+b.totalWt,0);
+
+  // stats
+  const sb = document.createElement('div'); sb.className='stats-row';
+  sb.innerHTML=`
+    <div class="stat"><div class="stat-lbl">需要箱数</div><div class="stat-v c-acc2">${boxes.length}</div></div>
+    <div class="stat"><div class="stat-lbl">商品总件</div><div class="stat-v">${totItems}</div></div>
+    <div class="stat"><div class="stat-lbl">平均利用率</div><div class="stat-v c-acc">${avgUtil}%</div></div>
+    <div class="stat"><div class="stat-lbl">总重量</div><div class="stat-v ${totWt>box.maxWt*boxes.length?'c-warn':''}">${totWt.toFixed(2)}kg</div></div>
+    ${flags.length?`<div class="stat"><div class="stat-lbl">超长标记</div><div class="stat-v c-warn">${flags.reduce((s,f)=>s+f.qty,0)}件</div></div>`:''}
+  `;
+  res.appendChild(sb);
+
+  // flags
+  if (flags.length) {
+    const fc = document.createElement('div'); fc.className='flags-card';
+    fc.innerHTML=`<div class="flags-title">⚠ 超长SKU — 需人工双箱拼接处理</div>`+
+      flags.map(f=>`<div class="flag-item">• ${f.sku}（${f.name}）× ${f.qty}件 · ${f.l}×${f.w}×${f.h}cm</div>`).join('');
+    res.appendChild(fc);
+  }
+
+  // tabs
+  const tabs = document.createElement('div'); tabs.className='box-tabs-wrap';
+  const boxVol = box.l*box.w*box.h;
+  tabs.innerHTML = boxes.map((b,i)=>{
+    const u=Math.round(b.usedVol/boxVol*100);
+    return`<button class="box-tab-btn ${i===0?'active':''}" onclick="switchBoxTab(${i})" id="btab-${i}">箱${i+1} · ${u}%</button>`;
+  }).join('') + (boxes.length>1?`<button class="box-tab-btn" onclick="printAllLabels(currentBoxes,currentSelectedBox)">🖨 全部打印</button>`:'');
+  res.appendChild(tabs);
+
+  // box views
+  const viewsWrap = document.createElement('div'); viewsWrap.id='boxViewsWrap';
+  boxes.forEach((bx,idx)=>{
+    const util = Math.round(bx.usedVol/boxVol*100);
+    const fc2 = util>75?'#00e5a0':util>50?'#3b82f6':'#f59e0b';
+
+    const skuColor={};let ci=0;
+    for(const p of bx.placed) if(!skuColor[p.sku]) skuColor[p.sku]=COLS[ci++%COLS.length];
+
+    const grouped={};
+    for(const p of bx.placed){
+      if(!grouped[p.sku]) grouped[p.sku]={name:p.name,count:0,pos:[],l:p.l,w:p.w,h:p.h,col:skuColor[p.sku]};
+      grouped[p.sku].count++;
+      grouped[p.sku].pos.push(`(${Math.round(p.x)},${Math.round(p.y)},${Math.round(p.z)})`);
+    }
+
+    const legendHTML=Object.entries(grouped).map(([s,g])=>`
+      <div class="legend-item">
+        <div class="legend-dot" style="background:${g.col}"></div>
+        <div style="flex:1">
+          <div class="legend-sku">${s} × ${g.count}</div>
+          <div class="legend-name">${g.name}</div>
+          <div class="legend-dim">${g.l}×${g.w}×${g.h}cm</div>
+          <div class="legend-pos">📍 ${g.pos.join(' ')}</div>
+        </div>
+      </div>`).join('');
+
+    const byZ=[...bx.placed].sort((a,b)=>a.z-b.z||a.x-b.x);
+    const stepsHTML=byZ.map((p,i)=>`
+      <div class="step-row">
+        <div class="step-num" style="background:${skuColor[p.sku]}">${i+1}</div>
+        <div class="step-info">
+          <div class="step-sku">${p.sku}</div>
+          <div style="color:var(--muted)">${p.name} · ${p.l}×${p.w}×${p.h}cm</div>
+          <div class="step-coord">📍 (${Math.round(p.x)}, ${Math.round(p.y)}, ${Math.round(p.z)})</div>
+        </div>
+      </div>`).join('');
+
+    const view = document.createElement('div');
+    view.className=`box-view ${idx===0?'active':''}`;
+    view.id=`bview-${idx}`;
+    view.innerHTML=`
+      <div class="canvas-card">
+        <div class="canvas-hdr">
+          <h2>箱 ${idx+1} · ${bx.placed.length}件</h2>
+          <div class="util-row">
+            <div class="util-bar"><div class="util-fill" style="width:${util}%;background:${fc2}"></div></div>
+            <div class="util-pct">${util}%利用率</div>
+          </div>
+        </div>
+        <canvas class="c3d" id="cv-${idx}" width="680" height="440"></canvas>
+        <div class="canvas-foot">
+          <span>拖动旋转 · X=长 Y=宽 Z=高 · 原点=箱左前底角</span>
+          <span>${bx.totalWt.toFixed(2)} / ${box.maxWt}kg</span>
+        </div>
+        <div class="print-row">
+          <button class="print-btn" onclick="printBoxLabel(${idx}, currentBoxes[${idx}], currentSelectedBox, currentBoxes.length)">🖨 打印此箱箱唛</button>
+          <button class="print-btn primary" onclick="printAllLabels(currentBoxes, currentSelectedBox)">🖨 打印全部箱唛</button>
+        </div>
+      </div>
+      <div class="side-cards">
+        <div class="card"><h3>商品图例</h3>${legendHTML}</div>
+        <div class="card"><h3>放置顺序（从下到上）</h3>${stepsHTML}</div>
+      </div>
+    `;
+    viewsWrap.appendChild(view);
+    setTimeout(()=>initCanvas3D(idx, bx.placed, skuColor, box), 120);
+  });
+  res.appendChild(viewsWrap);
+}
+
+function switchBoxTab(i) {
+  document.querySelectorAll('.box-tab-btn').forEach((t,j)=>t.classList.toggle('active',j===i));
+  document.querySelectorAll('.box-view').forEach((v,j)=>v.classList.toggle('active',j===i));
+}
+
+// ---- 3D RENDERER ----
+function initCanvas3D(idx, placements, skuColor, box) {
+  const cv = document.getElementById(`cv-${idx}`);
+  if (!cv) return;
+  let aX=-0.28, aY=0.42, dragging=false, lx=0, ly=0;
+
+  function redraw(){ draw3D(cv, placements, skuColor, box, aX, aY); }
+
+  cv.addEventListener('mousedown',e=>{dragging=true;lx=e.clientX;ly=e.clientY;});
+  cv.addEventListener('mousemove',e=>{if(!dragging)return;aY+=(e.clientX-lx)*0.01;aX+=(e.clientY-ly)*0.007;aX=Math.max(-0.7,Math.min(0.7,aX));lx=e.clientX;ly=e.clientY;redraw();});
+  cv.addEventListener('mouseup',()=>dragging=false);
+  cv.addEventListener('mouseleave',()=>dragging=false);
+  cv.addEventListener('touchstart',e=>{dragging=true;lx=e.touches[0].clientX;ly=e.touches[0].clientY;},{passive:true});
+  cv.addEventListener('touchmove',e=>{if(!dragging)return;aY+=(e.touches[0].clientX-lx)*0.01;aX+=(e.touches[0].clientY-ly)*0.007;aX=Math.max(-0.7,Math.min(0.7,aX));lx=e.touches[0].clientX;ly=e.touches[0].clientY;redraw();},{passive:true});
+  cv.addEventListener('touchend',()=>dragging=false);
+  redraw();
+}
+
+function proj(x,y,z,W,H,aX,aY,box){
+  const cx=box.l/2,cy=box.w/2,cz=box.h/2;
+  const dx=x-cx,dy=y-cy,dz=z-cz;
+  const cosY=Math.cos(aY),sinY=Math.sin(aY);
+  const x1=dx*cosY-dz*sinY, z1=dx*sinY+dz*cosY;
+  const cosX=Math.cos(aX),sinX=Math.sin(aX);
+  const y2=dy*cosX-z1*sinX;
+  const sc=Math.min(W,H)*0.012;
+  return[W/2+x1*sc, H/2-y2*sc];
+}
+
+function draw3D(cv, placements, skuColor, box, aX, aY){
+  const ctx=cv.getContext('2d'), W=cv.width, H=cv.height;
+  ctx.clearRect(0,0,W,H);
+  const p=(...a)=>proj(...a,W,H,aX,aY,box);
+
+  // box edges
+  const C=[[0,0,0],[box.l,0,0],[box.l,box.w,0],[0,box.w,0],[0,0,box.h],[box.l,0,box.h],[box.l,box.w,box.h],[0,box.w,box.h]];
+  [[0,1],[1,2],[2,3],[3,0],[4,5],[5,6],[6,7],[7,4],[0,4],[1,5],[2,6],[3,7]].forEach(([a,b])=>{
+    const[ax,ay]=p(...C[a]);const[bx,by]=p(...C[b]);
+    ctx.strokeStyle='rgba(37,42,56,0.9)';ctx.lineWidth=0.8;
+    ctx.beginPath();ctx.moveTo(ax,ay);ctx.lineTo(bx,by);ctx.stroke();
+  });
+
+  // floor grid
+  ctx.strokeStyle='rgba(30,36,52,0.6)';ctx.lineWidth=0.4;
+  for(let i=0;i<=6;i++){const xi=box.l*i/6;const[ax,ay]=p(xi,0,0);const[bx,by]=p(xi,box.w,0);ctx.beginPath();ctx.moveTo(ax,ay);ctx.lineTo(bx,by);ctx.stroke();}
+  for(let i=0;i<=4;i++){const yi=box.w*i/4;const[ax,ay]=p(0,yi,0);const[bx,by]=p(box.l,yi,0);ctx.beginPath();ctx.moveTo(ax,ay);ctx.lineTo(bx,by);ctx.stroke();}
+
+  // items sorted back-to-front
+  const sorted=[...placements].map(pl=>{
+    const[px]=p(pl.x+pl.l/2,pl.y+pl.w/2,pl.z+pl.h/2);
+    return{...pl,_d:px};
+  }).sort((a,b)=>a._d-b._d);
+
+  sorted.forEach(pl=>{
+    const col=skuColor[pl.sku]||'#3b82f6';
+    const{x,y,z,l,w,h}=pl;
+    const V=[[x,y,z],[x+l,y,z],[x+l,y+w,z],[0,y+w,z].map((_,i)=>[x,y+w,z][i]?[x,y+w,z][i]:0),[x,y,z+h],[x+l,y,z+h],[x+l,y+w,z+h],[x,y+w,z+h]].map(([a,b2,c])=>p(a,b2,c));
+    // recalc properly
+    const vv=[[x,y,z],[x+l,y,z],[x+l,y+w,z],[x,y+w,z],[x,y,z+h],[x+l,y,z+h],[x+l,y+w,z+h],[x,y+w,z+h]].map(([a,b2,c])=>p(a,b2,c));
+
+    function face(ids,alpha){
+      ctx.beginPath();
+      ids.forEach((i2,j)=>j===0?ctx.moveTo(vv[i2][0],vv[i2][1]):ctx.lineTo(vv[i2][0],vv[i2][1]));
+      ctx.closePath();ctx.fillStyle=col+alpha;ctx.fill();
+      ctx.strokeStyle=col+'88';ctx.lineWidth=0.7;ctx.stroke();
+    }
+    face([4,5,6,7],'cc');
+    face([1,2,6,5],'77');
+    face([2,3,7,6],'44');
+
+    // label
+    const[lx2,ly2]=p(x+l/2,y+w/2,z+h+0.5);
+    ctx.fillStyle='#ffffff';ctx.font='bold 8.5px IBM Plex Mono,monospace';ctx.textAlign='center';
+    ctx.fillText(pl.sku.split('-').slice(0,2).join('-'),lx2,ly2);
+  });
+}
+
+// ---- SKU TABLE ----
+function renderSkuTable(){
+  const q=(document.getElementById('skuSearch').value||'').toLowerCase();
+  const entries=Object.entries(SKU_DB).filter(([s,d])=>s.toLowerCase().includes(q)||d.name.toLowerCase().includes(q));
+  document.getElementById('skuCount').textContent=`共 ${entries.length} 个SKU`;
+  document.getElementById('skuTableBody').innerHTML=entries.map(([s,d])=>`
+    <tr>
+      <td><span style="font-family:var(--mono);font-weight:600">${s}</span></td>
+      <td>${d.name}</td>
+      <td>${d.l}</td><td>${d.w}</td><td>${d.h}</td>
+      <td>${d.wt}</td>
+      <td>${(d.l*d.w*d.h/1000).toFixed(2)}</td>
+      <td><span class="sku-badge ${d.oversized?'badge-warn':'badge-ok'}">${d.oversized?'⚠ 超长':'✓ 正常'}</span></td>
+    </tr>`).join('');
+}
+
+// ---- HISTORY ----
+function renderHistoryPage(){
+  const html=renderHistoryTable();
+  document.getElementById('histContent').innerHTML=
+    `<table class="hist-table"><thead><tr><th>时间</th><th>箱型</th><th>箱数</th><th>件数</th><th>总重</th><th>利用率</th><th>超长标记</th></tr></thead><tbody></tbody></table>`;
+  document.getElementById('histContent').innerHTML=`<div style="padding:4px">${html}</div>`;
+}
+
+// ---- SETTINGS ----
+function renderSettings(){
+  document.getElementById('settingsSkuCount').textContent=Object.keys(SKU_DB).length+' 个';
+  document.getElementById('settingsHistCount').textContent=getHistory().length+' 条';
+  document.getElementById('settingsBoxList').innerHTML=BOX_DB.map(b=>`
+    <div class="settings-row">
+      <label>${b.name}</label>
+      <span>${b.l}×${b.w}×${b.h}cm · ${b.maxWt}kg</span>
+    </div>`).join('');
+}
+
+// ---- PWA INSTALL ----
+let deferredPrompt;
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault(); deferredPrompt=e;
+  document.getElementById('installBtn').style.display='block';
+});
+document.getElementById('installBtn').addEventListener('click', ()=>{
+  if(deferredPrompt){ deferredPrompt.prompt(); deferredPrompt=null; document.getElementById('installBtn').style.display='none'; }
+});
+
+// ---- SERVICE WORKER ----
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('./sw.js').catch(()=>{});
+}
+
+// ---- INIT ----
+initBoxSelect();
+renderSkuTable();
+</script>
+</body>
+</html>
