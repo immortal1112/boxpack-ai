@@ -172,7 +172,7 @@ table.sku-table tr:hover td{background:var(--surf2)}
   <button class="nav-tab" onclick="showPage('history',this)">历史记录</button>
   <button class="nav-tab" onclick="showPage('settings',this)">设置</button>
   <div class="nav-right">
-    <span class="ver">v1.0.0</span>
+    <span class="ver">v1.0.2</span>
     <button class="install-btn" id="installBtn">安装到桌面</button>
   </div>
 </nav>
@@ -301,14 +301,17 @@ function updateBoxInfo() {
   const sel = document.getElementById('boxSelect');
   const box = BOX_DB.find(b => b.id === sel.value) || BOX_DB[0];
   currentSelectedBox = box;
+  const dL = box.displayL || box.l;
+  const dW = box.displayW || box.w;
+  const dH = box.displayH || box.h;
   document.getElementById('boxInfoCard').innerHTML = `
     <table>
-      <tr><td>长</td><td>${box.l} cm</td></tr>
-      <tr><td>宽</td><td>${box.w} cm</td></tr>
-      <tr><td>高</td><td>${box.h} cm</td></tr>
+      <tr><td>实际尺寸</td><td>${dL}×${dW}×${dH} cm</td></tr>
+      <tr><td>有效内径</td><td>${box.l}×${box.w}×${box.h} cm</td></tr>
       <tr><td>最大承重</td><td>${box.maxWt} kg</td></tr>
-      <tr><td>内容积</td><td>${(box.l*box.w*box.h/1000).toFixed(0)} L</td></tr>
-    </table>`;
+      <tr><td>有效容积</td><td>${(box.l*box.w*box.h/1000).toFixed(0)} L</td></tr>
+    </table>
+    <div style="font-size:9px;color:var(--muted);margin-top:6px">有效内径已减去2cm缓冲（箱壁+操作空间）</div>`;
 }
 
 // ---- PARSE INPUT ----
